@@ -1,0 +1,94 @@
+/* ─────────────────────────────────────────────────────────────
+   FORM / FIELD — design tokens
+   Colours, type, spacing, borders and motion live here only.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --c-ivory: #e8e2d6;
+  --c-ivory-dim: #c9c2b4;
+  --c-ink: #171917;
+  --c-ink-2: #1e201d;
+  --c-ink-3: #262824;
+  --c-timber: #493329;
+  --c-stone: #9a958b;
+  --c-metal: #a68b68;
+  --c-amber: #e2ad72;
+
+  /* Roles */
+  --bg: var(--c-ink);
+  --bg-raised: var(--c-ink-2);
+  --fg: var(--c-ivory);
+  --fg-muted: #b3ac9f; /* 7.9:1 on ink */
+  --fg-faint: #8f8a80; /* 5.2:1 on ink — labels only */
+  --accent: var(--c-metal);
+  --rule: rgb(232 226 214 / 0.18);
+  --rule-strong: rgb(232 226 214 / 0.38);
+  --focus: #f0c48c;
+
+  --bg-light: var(--c-ivory);
+  --fg-on-light: var(--c-ink);
+  --fg-on-light-muted: #4f4c45; /* 7.4:1 on ivory */
+  --rule-on-light: rgb(23 25 23 / 0.2);
+
+  /* Typography */
+  --font-serif: 'Cormorant Garamond', 'Cormorant', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-hero: clamp(3.1rem, 1.1rem + 6.6vw, 8.6rem);
+  --fs-display: clamp(2.7rem, 1.3rem + 4.8vw, 6.6rem);
+  --fs-display-md: clamp(2.2rem, 1.3rem + 3vw, 4.6rem);
+  --fs-display-sm: clamp(1.75rem, 1.3rem + 1.5vw, 2.8rem);
+  --fs-lead: clamp(1.2rem, 1.05rem + 0.55vw, 1.6rem);
+  --fs-body: clamp(0.97rem, 0.93rem + 0.18vw, 1.06rem);
+  --fs-small: 0.875rem;
+  --fs-label: 0.72rem;
+
+  --lh-tight: 0.96;
+  --lh-display: 1.02;
+  --lh-body: 1.62;
+  --track-label: 0.16em;
+
+  --measure: 34rem;
+  --measure-wide: 44rem;
+
+  /* Spacing */
+  --gutter: clamp(1rem, 4.2vw, 4.75rem);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: clamp(4.5rem, 3rem + 6vw, 9rem);
+  --section-pad: clamp(5rem, 3rem + 8vw, 11rem);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --side: max(var(--gutter), var(--safe-left), var(--safe-right));
+
+  /* Borders */
+  --hairline: 1px solid var(--rule);
+  --hairline-strong: 1px solid var(--rule-strong);
+  --radius: 0;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-mid: 420ms;
+  --dur-slow: 1100ms;
+
+  --header-h: 4.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-mid: 1ms;
+    --dur-slow: 240ms;
+  }
+}

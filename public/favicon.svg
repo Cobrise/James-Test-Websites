@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="10" fill="#171917"/>
+  <!-- two intersecting horizontal volumes: the FORM / FIELD mark -->
+  <rect x="12" y="34" width="34" height="9" fill="#E8E2D6"/>
+  <rect x="26" y="21" width="27" height="9" fill="#A68B68"/>
+  <rect x="12" y="46" width="41" height="2" fill="#9A958B"/>
+</svg>
