@@ -51,7 +51,10 @@ function captureEndpoint(): Plugin {
         const chunks: Buffer[] = []
         req.on('data', (c: Buffer) => chunks.push(c))
         req.on('end', () => {
-          const target = file === 'og-image.jpg' ? resolve('public') : resolve('public/renders')
+          // film-* frames are working material for the AI video step: kept
+          // out of public/ so they are never published.
+          const target =
+            file === 'og-image.jpg' ? resolve('public') : file.startsWith('film-') ? resolve('assets-source/film') : resolve('public/renders')
           mkdirSync(target, { recursive: true })
           writeFileSync(resolve(target, file), Buffer.concat(chunks))
           res.end('ok')

@@ -3,14 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "FORM / FIELD — an interactive architecture concept website by James.",
+  "description": "FORM / FIELD \u2014 an interactive architecture concept website by James.",
   "author": "James",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "frames": "node scripts/film-frames.mjs",
+    "predev": "node scripts/film-frames.mjs",
+    "prebuild": "node scripts/film-frames.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -27,6 +30,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -34,7 +40,9 @@
     "@vitejs/plugin-react": "^6.3.0",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "ffmpeg-static": "^5.3.0",
     "globals": "^17.14.0",
+    "meshoptimizer": "^1.3.0",
     "typescript": "~6.0.0",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8"

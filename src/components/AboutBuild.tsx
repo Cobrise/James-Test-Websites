@@ -22,10 +22,19 @@ export function AboutBuild({ open, onClose }: { open: boolean; onClose: () => vo
           <section>
             <h3>Real-time architecture</h3>
             <p>
-              Stillwater House is modelled and rendered live in the browser with Three.js — it is not a video or a
-              sequence of images. Walls, slabs, glazing, the stair and the furniture are procedural geometry built from
-              one set of plan dimensions; repeated elements (timber battens, screen fins, balusters, trees) are
-              instanced.
+              Stillwater House is modelled and rendered live in the browser with Three.js. Walls, slabs, glazing and
+              the stair are procedural geometry built from one set of plan dimensions; repeated elements (timber
+              battens, screen fins, balusters, trees) are instanced. Most interior furniture and objects are free CC0
+              models from Poly Haven, compressed for the web.
+            </p>
+          </section>
+          <section>
+            <h3>AI-generated film</h3>
+            <p>
+              The photo-real opening is AI-generated video, not live rendering. Camera moves were first rendered as
+              plain white models along the site’s own camera path; those guides and AI-generated stills (ChatGPT) were
+              turned into clips with Dreamina (Seedance). Scrolling scrubs the clip, which then cross-fades into the
+              live model at the same viewpoint.
             </p>
           </section>
           <section>
@@ -39,9 +48,9 @@ export function AboutBuild({ open, onClose }: { open: boolean; onClose: () => vo
           <section>
             <h3>Materials</h3>
             <p>
-              No texture files are downloaded. Timber grain, limestone, plaster, fabric and the distant tree lines are
-              generated procedurally at load time; the sky is a small shader, and reflections come from an environment
-              map assembled in the scene. The material study re-tints the stair timber live.
+              Architectural surfaces use no texture files: timber grain, limestone, plaster, fabric and the distant tree
+              lines are generated procedurally at load time; the sky is a small shader, and reflections come from an
+              environment map assembled in the scene. The material study re-tints the stair timber live.
             </p>
           </section>
           <section>

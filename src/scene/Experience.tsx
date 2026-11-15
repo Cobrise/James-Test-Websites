@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing'
@@ -8,9 +8,10 @@ import { createSceneTextures } from './materials/textures'
 import { applyTimberFinish, createMaterials } from './materials/materials'
 import { Residence } from './architecture/Residence'
 import { Landscape } from './landscape/Landscape'
+import { Interior } from './architecture/Interior'
 import { Lighting } from './lighting/Lighting'
 import { CameraRig, type PoseOverride } from './camera/CameraRig'
-import { restPose, stillViews } from './camera/cameraPath'
+import { buildCameraPath, fovAt, restPose, stillViews } from './camera/cameraPath'
 import { getState, subscribe } from '../state/store'
 import type { QualityTier } from '../lib/capabilities'
 
@@ -20,6 +21,8 @@ export interface ExperienceProps {
   compact: boolean
   parallax: boolean
   capture?: boolean
+  /** Stop rendering (e.g. while the film covers the stage). */
+  paused?: boolean
   onReady: () => void
   onFail: (reason: string) => void
 }
@@ -83,14 +86,14 @@ function ReadySignal({ onReady }: { onReady: () => void }) {
   return null
 }
 
-/** Pauses all rendering while the stage is scrolled out of view or the tab is hidden. */
-function VisibilityGate({ container }: { container: React.RefObject<HTMLDivElement | null> }) {
+/** Pauses all rendering while the stage is scrolled out of view, the tab is hidden, or the film covers it. */
+function VisibilityGate({ container, paused }: { container: React.RefObject<HTMLDivElement | null>; paused: boolean }) {
   const setFrameloop = useThree((s) => s.setFrameloop)
   const invalidate = useThree((s) => s.invalidate)
   useEffect(() => {
     let inView = true
     const apply = () => {
-      const on = inView && !document.hidden
+      const on = inView && !document.hidden && !paused
       setFrameloop(on ? 'demand' : 'never')
       if (on) invalidate()
     }
@@ -104,15 +107,18 @@ function VisibilityGate({ container }: { container: React.RefObject<HTMLDivEleme
       io.disconnect()
       document.removeEventListener('visibilitychange', apply)
     }
-  }, [container, setFrameloop, invalidate])
+  }, [container, paused, setFrameloop, invalidate])
   return null
 }
 
+const CLAY = new THREE.MeshStandardMaterial({ color: '#ecebe6', roughness: 0.88, metalness: 0 })
+
 /** Dev-only still capture: window.__ff.snap('name') renders a pose to public/renders. */
 function CaptureApi({ override }: { override: React.RefObject<PoseOverride | null> }) {
-  const { gl, invalidate, advance } = useThree()
+  const { gl, invalidate, advance, scene } = useThree()
   useEffect(() => {
     const api = {
+      scene,
       poses: { ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`chapter-${i + 1}`, restPose(i)])), ...stillViews },
       view(pos: [number, number, number], target: [number, number, number], fov = 40) {
         override.current = { pos, target, fov }
@@ -128,20 +134,72 @@ function CaptureApi({ override }: { override: React.RefObject<PoseOverride | nul
         override.current = p
         invalidate()
       },
+      /**
+       * Path parameter u for an arc-length fraction s of the stretch u0…u1, so
+       * a rendered move travels at an even speed (raw u is uneven per segment).
+       */
+      uAtDistance(u0: number, u1: number, s: number) {
+        const p = buildCameraPath(false)
+        const N = 800
+        const pts = Array.from({ length: N + 1 }, (_, i) => p.pos.getPoint(u0 + ((u1 - u0) * i) / N))
+        const cum = [0]
+        for (let i = 1; i <= N; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]))
+        const want = s * cum[N]
+        const i = cum.findIndex((c) => c >= want)
+        if (i <= 0) return u0
+        const f = (want - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+        return u0 + ((u1 - u0) * (i - 1 + f)) / N
+      },
+      /** Camera pose at path parameter u (0–1) along the real chapter path. */
+      pathPose(u: number) {
+        const p = buildCameraPath(false)
+        const pos = p.pos.getPoint(u)
+        const target = p.target.getPoint(u)
+        override.current = { pos: pos.toArray(), target: target.toArray(), fov: fovAt(p, u) }
+        invalidate()
+      },
+      /**
+       * Clay mode: swaps every opaque surface for one matte white material
+       * (the "white model" look used as a motion guide for AI video). Glass,
+       * light sources, sky and alpha-cut foliage keep their own materials.
+       */
+      clay(on: boolean) {
+        scene.traverse((o) => {
+          const m = o as THREE.Mesh
+          if (!m.isMesh || m.userData.keepInClay) return
+          if (on) {
+            if (m.userData.preClay) return
+            const mats = Array.isArray(m.material) ? m.material : [m.material]
+            const keep = mats.some((x) => {
+              const s = x as THREE.MeshStandardMaterial
+              const glows = !!s.emissive && s.emissive.getHex() !== 0 && (s.emissiveIntensity ?? 0) > 0.3
+              return s.transparent || s.alphaTest > 0 || glows || !('roughness' in s)
+            })
+            if (keep) return
+            m.userData.preClay = m.material
+            m.material = CLAY
+          } else if (m.userData.preClay) {
+            m.material = m.userData.preClay
+            delete m.userData.preClay
+          }
+        })
+        gl.shadowMap.needsUpdate = true
+        invalidate()
+      },
       async snap(file: string, quality = 0.86) {
         // Drive the normal render loop (camera rig + post-processing) by hand
         // so the captured frame is never one pose behind, even when the page
         // is not being composited; preserveDrawingBuffer keeps it readable.
         for (let i = 0; i < 3; i++) advance(performance.now() + i * 16)
         await new Promise((r) => setTimeout(r, 50))
-        const type = file.endsWith('.jpg') ? 'image/jpeg' : 'image/webp'
+        const type = file.endsWith('.jpg') ? 'image/jpeg' : file.endsWith('.png') ? 'image/png' : 'image/webp'
         const blob: Blob = await new Promise((r) => gl.domElement.toBlob((b) => r(b!), type, quality))
         const res = await fetch(`/__capture/${file}`, { method: 'POST', body: blob })
         return `${res.status} ${blob.size}`
       },
     }
     ;(window as unknown as { __ff: typeof api }).__ff = api
-  }, [gl, invalidate, advance, override])
+  }, [gl, invalidate, advance, override, scene])
   return null
 }
 
@@ -151,11 +209,20 @@ function Scene({ quality, portrait, compact, parallax, capture, onReady }: Exper
   return (
     <>
       <fog attach="fog" args={['#4f5660', 45, 250]} />
-      <Lighting quality={quality} />
       <Residence materials={materials} />
       <Landscape materials={materials} quality={quality} />
       <CameraRig portrait={portrait} compact={compact} parallax={parallax} override={override} />
-      <ReadySignal onReady={onReady} />
+      {/*
+        Interior models load asynchronously. Keeping it in its own Suspense boundary
+        means the rest of the scene (and its generated textures) is not torn
+        down while it loads, and ReadySignal only mounts once lighting is in,
+        so the canvas is never revealed half-lit.
+      */}
+      <Suspense fallback={null}>
+        <Lighting quality={quality} />
+        <Interior />
+        <ReadySignal onReady={onReady} />
+      </Suspense>
       {capture && <CaptureApi override={override} />}
     </>
   )
@@ -211,11 +278,13 @@ export default function Experience(props: ExperienceProps) {
         }}
         aria-hidden="true"
       >
-        <VisibilityGate container={container} />
+        <VisibilityGate container={container} paused={!!props.paused} />
         {quality === 'high' && !capture && (
           <PerformanceMonitor flipflops={2} onDecline={() => setDegraded(true)} />
         )}
-        <Scene {...props} />
+        <Suspense fallback={null}>
+          <Scene {...props} />
+        </Suspense>
         {quality === 'high' && <Effects degraded={degraded} />}
       </Canvas>
     </div>

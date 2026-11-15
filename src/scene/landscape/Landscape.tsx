@@ -81,100 +81,6 @@ function Conifers({ density }: { density: number }) {
 }
 
 /**
- * Multi-stem courtyard maple. Three leaning stems and a crown built from
- * overlapping, softly displaced icosahedra in an autumn rust tone — the one
- * warm counterpoint to the conifers.
- */
-function CourtyardTree() {
-  const { stems, crown, stemMat, crownMat } = useMemo(() => {
-    const base = new THREE.Vector3(-10.4, D.plinth, 8.4)
-    const stemGeos: THREE.BufferGeometry[] = []
-    const leans = [
-      [0.18, 0.0, 4.6],
-      [-0.14, 2.1, 4.1],
-      [0.1, 4.2, 3.8],
-    ]
-    leans.forEach(([lean, dir, h]) => {
-      const g = new THREE.CylinderGeometry(0.045, 0.09, h, 7)
-      g.translate(0, h / 2, 0)
-      g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(lean, dir, lean * 0.6, 'YXZ')))
-      g.translate(base.x, base.y, base.z)
-      stemGeos.push(g)
-    })
-    const crownGeos: THREE.BufferGeometry[] = []
-    const puffs: [number, number, number, number][] = [
-      [0.2, 4.4, 0.1, 1.3],
-      [-0.9, 4.0, 0.4, 1.0],
-      [1.1, 3.9, -0.3, 1.05],
-      [0.3, 3.6, 1.0, 0.95],
-      [-0.4, 3.7, -1.0, 0.9],
-      [0.6, 4.9, -0.5, 0.85],
-      [-0.6, 4.8, 0.6, 0.8],
-      [1.4, 4.4, 0.7, 0.7],
-      [-1.4, 4.4, -0.4, 0.7],
-    ]
-    puffs.forEach(([x, y, z, r], i) => {
-      const g = new THREE.IcosahedronGeometry(r, 1)
-      const p = g.attributes.position
-      for (let k = 0; k < p.count; k++) {
-        // Displace by position (not vertex index) so shared corners stay welded.
-        const px = p.getX(k)
-        const py = p.getY(k)
-        const pz = p.getZ(k)
-        const s = 1 + 0.16 * Math.sin(px * 5.1 + i) * Math.cos(pz * 4.3 + py * 2.7)
-        p.setXYZ(k, px * s, py * s * 0.72, pz * s)
-      }
-      g.computeVertexNormals()
-      g.translate(base.x + x, base.y + y, base.z + z)
-      crownGeos.push(g)
-    })
-    const merge = (input: THREE.BufferGeometry[]) => {
-      const list = input.map((g) => {
-        if (!g.index) return g
-        const n = g.toNonIndexed()
-        g.dispose()
-        return n
-      })
-      const total = list.reduce((n, g) => n + g.attributes.position.count, 0)
-      const pos = new Float32Array(total * 3)
-      const nor = new Float32Array(total * 3)
-      let o = 0
-      list.forEach((g) => {
-        pos.set(g.attributes.position.array as Float32Array, o * 3)
-        nor.set(g.attributes.normal.array as Float32Array, o * 3)
-        o += g.attributes.position.count
-        g.dispose()
-      })
-      const m = new THREE.BufferGeometry()
-      m.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-      m.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
-      return m
-    }
-    return {
-      stems: merge(stemGeos),
-      crown: merge(crownGeos),
-      stemMat: new THREE.MeshStandardMaterial({ color: '#3a2f28', roughness: 0.9 }),
-      crownMat: new THREE.MeshStandardMaterial({ color: '#7d3b22', roughness: 0.85, flatShading: true }),
-    }
-  }, [])
-  useLayoutEffect(
-    () => () => {
-      stems.dispose()
-      crown.dispose()
-      stemMat.dispose()
-      crownMat.dispose()
-    },
-    [stems, crown, stemMat, crownMat],
-  )
-  return (
-    <>
-      <mesh geometry={stems} material={stemMat} castShadow />
-      <mesh geometry={crown} material={crownMat} castShadow receiveShadow />
-    </>
-  )
-}
-
-/**
  * Distant forest: three concentric tree-line bands drawn as alpha
  * silhouettes. Linear fog lightens each successive band, giving the layered,
  * atmospheric depth of a wooded valley at dusk.
@@ -271,7 +177,7 @@ function Water({ quality, material }: { quality: 'high' | 'low'; material: THREE
   const w = P.x1 - P.x0
   const d = P.z1 - P.z0
   return (
-    <mesh rotation-x={-Math.PI / 2} position={[(P.x0 + P.x1) / 2, P.water, (P.z0 + P.z1) / 2]} receiveShadow>
+    <mesh rotation-x={-Math.PI / 2} position={[(P.x0 + P.x1) / 2, P.water, (P.z0 + P.z1) / 2]} receiveShadow userData={{ keepInClay: true }}>
       <planeGeometry args={[w, d]} />
       {quality === 'high' ? (
         <MeshReflectorMaterial
@@ -300,7 +206,6 @@ export function Landscape({ materials, quality }: Props) {
       <ForestLayers />
       <Terrain material={materials.ground} />
       <Conifers density={quality === 'high' ? 1 : 0.6} />
-      <CourtyardTree />
       <Water quality={quality} material={materials.water} />
     </>
   )

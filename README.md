@@ -2,7 +2,9 @@
 
 **An interactive architecture concept website by James.**
 
-A real-time 3D, scroll-driven architectural film through *Stillwater House*, a fictional residence by *FORM / FIELD*, a fictional architecture studio. The site was created by James as an independent portfolio project exploring real-time 3D, scroll-driven storytelling and architectural web design.
+A scroll-driven architectural film through *Stillwater House*, a fictional residence by *FORM / FIELD*, a fictional architecture studio. The site was created by James as an independent portfolio project exploring real-time 3D, scroll-driven storytelling and architectural web design.
+
+**Version 2:** the opening is now a photo-real, AI-generated film (scrubbed by scrolling) that hands over to the real-time 3D model. See "Film" below.
 
 > FORM / FIELD, Stillwater House, Ridge Pavilion and Courtyard No. 04 are fictional concepts. They do not represent a real practice, client, commission or building, and nothing on the site claims otherwise.
 
@@ -36,7 +38,7 @@ Useful URL switches for testing (they work in production too):
 
 React 19 · TypeScript · Vite · Three.js via React Three Fiber · Drei · React Postprocessing (N8AO ambient occlusion, bloom, tone mapping, vignette) · GSAP ScrollTrigger · plain CSS with design tokens. Fonts are self-hosted via Fontsource.
 
-No API keys, paid services, model marketplaces or external rendering are used. All geometry and textures are generated from the project source; the only binary assets are the stills in `public/renders/` and `public/og-image.jpg`, which were rendered from the scene itself (see "Stills" below).
+No API keys are needed to run or build the site. The architecture and its textures are generated from the project source. Binary assets are: interior furniture models in `public/models/` (Poly Haven, CC0), the AI-generated film in `film-src/` and the chapter photographs in `public/film/` (see "Film"), and the stills in `public/renders/` plus `public/og-image.jpg`, rendered from the scene itself (see "Stills").
 
 ## Project structure
 
@@ -125,6 +127,17 @@ The editorial views, the reduced-motion / fallback chapter stills and the social
 
 Re-capture the stills after changing the model, materials or camera poses.
 
+## Film
+
+The photo-real opening is **AI-generated video**, not live rendering:
+
+1. Camera moves were rendered from the 3D scene as plain white models along the site's own camera path (dev-only `?capture` mode).
+2. Photo-real stills of the same views were generated with ChatGPT from renders of the scene.
+3. Dreamina (Seedance 2.5) turned the stills into one continuous take.
+4. The take was re-timed evenly, motion-interpolated to 48 fps with ffmpeg, and stored as `film-src/opening.mp4`.
+
+`npm run dev` and `npm run build` run `scripts/film-frames.mjs` first, which turns each `film-src/<name>.mp4` into a frame sequence in `public/film/<name>/` (generated, not committed). `src/components/Film.tsx` draws those frames to a canvas as you scroll: frames load coarse-to-fine and neighbouring frames are blended, so scrubbing is smooth in both directions, and the 3D renderer pauses while the film covers the screen. Clips, their span on the camera path and their timing are configured in `src/config/film.ts`. The "About this build" dialog discloses the AI-generated film.
+
 ## Deployment
 
 `npm run build` produces a fully static site in `dist/`. Asset paths are relative (`base: './'`), so it works at a domain root or under a sub-path (for example GitHub Pages project sites). There are no client-side routes, so refreshes and direct links always resolve to `index.html`. No secrets are embedded.
@@ -155,7 +168,7 @@ After deploying, open the public URL and check: the opening scene loads, all fiv
 
 ## Asset provenance and licensing
 
-Everything visual in the scene — geometry, textures, sky, tree lines — is generated procedurally by this project's code. The stills and social image were rendered from that scene. The SVG drawings were drawn in code for this project.
+The architecture, textures, sky and tree lines are generated procedurally by this project's code. Most interior furniture and objects are CC0 models from Poly Haven (https://polyhaven.com), compressed with gltf-transform and meshoptimizer (`scripts/optimize-models.mjs`). The opening film and chapter photographs are AI-generated (ChatGPT images, Dreamina / Seedance video) from renders of this scene. The stills and social image were rendered from the scene. The SVG drawings were drawn in code for this project.
 
 Third-party software and fonts:
 
@@ -169,6 +182,8 @@ Third-party software and fonts:
 | GSAP (incl. ScrollTrigger) | GSAP Standard "no charge" licence |
 | Cormorant Garamond (Christian Thalmann), Inter (Rasmus Andersson), IBM Plex Mono (IBM) via Fontsource | SIL Open Font Licence 1.1 |
 | Vite, TypeScript, ESLint | MIT / Apache-2.0 |
+| ffmpeg-static (build-time frame extraction) | GPL-3.0 (tool only; not shipped in the site) |
+| gltf-transform, meshoptimizer (model compression) | MIT |
 
 The project was developed with the help of AI coding tools.
 

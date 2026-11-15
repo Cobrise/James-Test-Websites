@@ -128,7 +128,10 @@ export function createMaterials(tex: SceneTextures, finish: TimberFinishId): Mat
   }
   return Object.assign(lib, {
     dispose() {
-      Object.values(lib).forEach((m) => m.dispose())
+      // Only the materials: `dispose` itself is attached to the same object.
+      Object.values(lib).forEach((m) => {
+        if (m instanceof THREE.Material) m.dispose()
+      })
     },
   })
 }

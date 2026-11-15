@@ -10,6 +10,7 @@ import { ChapterIndex } from './ChapterIndex'
 import { Loader } from './Loader'
 import { Stills } from './Stills'
 import { ErrorBoundary } from './ErrorBoundary'
+import { Film } from './Film'
 
 const Experience = lazy(() => import('../scene/Experience'))
 
@@ -41,6 +42,7 @@ export function Cinema({ mode, reducedMotion, onLiveFailed }: Props) {
   const status = useStore((s) => s.sceneStatus)
   const [quality] = useState(initialQuality)
   const capture = isCaptureMode()
+  const [filmCovers, setFilmCovers] = useState(false)
 
   useCinemaScroll(cinemaRef, { scrub: reducedMotion ? true : 0.9, key: `${compact}` })
 
@@ -134,6 +136,8 @@ export function Cinema({ mode, reducedMotion, onLiveFailed }: Props) {
                   compact={compact}
                   parallax={!reducedMotion && !compact}
                   capture={capture}
+                  // Only after the first frames are drawn, so readiness is never blocked.
+                  paused={filmCovers && status === 'ready'}
                   onReady={onReady}
                   onFail={onLiveFailed}
                 />
@@ -143,9 +147,10 @@ export function Cinema({ mode, reducedMotion, onLiveFailed }: Props) {
             <Stills />
           )}
         </div>
+        {!reducedMotion && !capture && <Film compact={compact} onCoverChange={setFilmCovers} />}
         <div className="stage__scrim" aria-hidden="true" />
         <div className="stage__fade" ref={fadeRef} aria-hidden="true" />
-        {mode === 'live' && <Loader visible={status !== 'ready'} />}
+        {mode === 'live' && <Loader visible={status !== 'ready' && !filmCovers} />}
 
         <div className="chapters">
           {chapters.map((c, i) => {

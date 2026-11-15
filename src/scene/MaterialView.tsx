@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
@@ -96,7 +96,9 @@ export default function MaterialView({ onFail }: { onFail: () => void }) {
       }}
       aria-hidden="true"
     >
-      <Sample />
+      <Suspense fallback={null}>
+        <Sample />
+      </Suspense>
     </Canvas>
   )
 }
